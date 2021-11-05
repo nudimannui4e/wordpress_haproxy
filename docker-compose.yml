@@ -1,0 +1,87 @@
+version: '3'
+
+networks:
+  default:
+    name: haproxy
+
+services:
+  # Database
+  db:
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    networks:
+      default:
+        ipv4_address: 172.172.0.11
+  # phpmyadmin
+  phpmyadmin:
+    depends_on:
+      - db
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - '3030:80'
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: password 
+    networks:
+      default:
+        ipv4_address: 172.172.0.12
+  # Wordpress
+  wordpress_1:
+    depends_on:
+      - db
+    image: wordpress:latest
+    ports:
+      - '3010:80'
+    restart: always
+    volumes: 
+      - ./wp_data:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    networks:
+      default:
+        ipv4_address: 172.172.0.101
+  wordpress_2:
+    depends_on:
+      - db 
+    image: wordpress:latest
+    ports:
+      - '3020:80'
+    restart: always
+    volumes: 
+      - ./wp_data:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    networks:
+      default:
+        ipv4_address: 172.172.0.102
+
+  haproxy:
+    depends_on:
+      - wordpress_1
+      - wordpress_2
+    image: haproxy:2.3.15-alpine
+    ports:
+      - '3936:1936'
+      - '3080:80'
+      - '3443:443'
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      - ./keystore/wpsite.pem:/etc/ssl/certs/wpsite.pem
+    networks:
+      default:
+        ipv4_address: 172.172.0.200
+volumes:
+  db_data:
+  wp_data:
