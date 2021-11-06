@@ -82,6 +82,7 @@ services:
     networks:
       default:
         ipv4_address: 172.172.0.200
+    restart: unless-stopped
 volumes:
   db_data:
   wp_data:
